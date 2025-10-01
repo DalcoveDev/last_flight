@@ -1,0 +1,140 @@
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Flight Simulator | Arcade Flight</title>
+		<meta name="description" content="Demo of the game: The Making of 'The Aviator': Animating a Basic 3D Scene with Three.js" />
+		<meta name="keywords" content="three.js, webgl, tutorial, game, 3d, animation, airplane, web development, javascript" />
+		<meta name="author" content="Karim Maaloul for Codrops" />
+		<link rel="shortcut icon" href="favicon.ico">
+		<link href='https://fonts.googleapis.com/css?family=Playfair+Display:400,700,700italic' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" type="text/css" href="css/demo.css" />
+		<link rel="stylesheet" type="text/css" href="css/game.css" />
+		<script type="text/javascript" src="js/TweenMax.min.js"></script>
+		<script type="text/javascript" src="js/three.min.js"></script>
+		<script type="text/javascript" src="js/game.js" /></script>
+	<style id="startMenuStyles">
+	  .start-menu{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(1200px 600px at 50% 0%, rgba(79,177,255,.15), rgba(0,0,0,.7)), linear-gradient(180deg, rgba(7,12,22,.85), rgba(9,14,24,.85));backdrop-filter:blur(6px);z-index:60;opacity:0;pointer-events:none;transition:opacity .25s ease}
+	  .start-menu.show{opacity:1;pointer-events:auto}
+	  .start-menu .panel{width:min(96vw,920px);background:rgba(18,28,45,.92);color:#e6f0ff;border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.55);padding:24px 24px 18px}
+	  .start-menu .hero{display:flex;align-items:baseline;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:12px;margin-bottom:12px}
+	  .start-menu .hero h1{margin:0;font:800 28px/1.1 Inter,system-ui,sans-serif;letter-spacing:.02em}
+	  .start-menu .hero p{margin:0;color:#b8c7e0;font:500 13px/1.4 Inter,system-ui,sans-serif}
+	  .start-menu .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+	  .start-menu h3{margin:0 0 8px;font:700 14px/1.2 Inter,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#9fb0c9}
+	  .start-menu .list{margin:0;padding:0 0 0 16px;color:#d6e1f3;font:500 13px/1.55 Inter,system-ui,sans-serif}
+	  .start-menu .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0}
+	  .start-menu .cta{display:flex;gap:12px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,.08);padding-top:12px;margin-top:16px}
+	  .btn-ui{appearance:none;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:#e6f0ff;border-radius:12px;padding:10px 14px;cursor:pointer}
+	  .btn-ui:hover{border-color:rgba(255,255,255,.3)}
+	  .btn-ui.primary{background:linear-gradient(180deg,#4fb1ff,#1ca7ec);border-color:#4fb1ff;color:#06101c;box-shadow:0 6px 20px rgba(79,177,255,.3)}
+	  .start-menu .note{margin:10px 0 0;color:#9fb0c9;font:500 11px/1.4 Inter,system-ui,sans-serif}
+	  @media (max-width: 720px){ .start-menu .grid{grid-template-columns:1fr} }
+	</style>
+	</head>
+	<body>
+		<div class="game-holder" id="gameHolder">
+			<div class="hud">
+				<div class="hud-bar">
+					<div class="hud-group left">
+						<div class="hud-card level">
+							<div class="label">Level</div>
+							<div class="value" id="levelValue">1</div>
+							<svg class="level-ring" id="levelCircle" viewbox="0 0 200 200">
+								<circle id="levelCircleBgr" r="80" cx="100" cy="100" fill="none" stroke="#2a3547" stroke-width="20px" />
+								<circle id="levelCircleStroke" r="80" cx="100" cy="100" fill="none" stroke="#4fb1ff" stroke-width="12px" stroke-dasharray="502" />
+							</svg>
+						</div>
+						<div class="hud-card dist">
+							<div class="label">Distance</div>
+							<div class="value" id="distValue">000</div>
+						</div>
+						<div class="hud-card energy">
+							<div class="label">Energy</div>
+							<div class="bar"><div class="fill" id="energyBar"></div></div>
+						</div>
+					</div>
+					<div class="hud-group center">
+						<h1 class="brand">Flight Simulator</h1>
+						<h2 class="tagline">Arcade Flight Challenge</h2>
+					</div>
+					<div class="hud-group right"></div>
+				</div>
+			</div>
+			<div class="world" id="world"></div>
+			<div class="message message--replay" id="replayMessage">Click to Replay</div>
+			<div class="message message--instructions" id="instructions">Grab the blue pills<span>avoid the red ones</span></div>
+		</div>
+
+<!-- Start Menu Overlay -->
+	<div id="startMenu" class="start-menu show">
+	  <div class="panel">
+	    <div class="hero">
+	      <h1>Flight Simulator</h1>
+	      <p>Master the skies in a fast-paced 3D arcade flight experience.</p>
+	    </div>
+	    <div class="grid">
+	      <div class="col">
+	        <h3>How to Play</h3>
+	        <ul class="list">
+	          <li>Goal: Fly forward, collect blue energy bolts, avoid black sky mines.</li>
+	          <li>Energy: Drains at 3.5% per second. Collect energy to refill and stay airborne.</li>
+	          <li>Weapons: Fire missiles to destroy mines and earn bonus distance.</li>
+	          <li>Shield: Press S to activate for 10s (absorbs 5 hits). Start with 2 charges; +1 each level.</li>
+	        </ul>
+	      </div>
+	      <div class="col">
+	        <h3>Controls</h3>
+	        <ul class="list">
+	          <li>Mouse Mode: Move to steer; Click to fire</li>
+	          <li>On-screen Buttons: Use the UI arrows and fire button</li>
+	          <li>Keys: F = Fire • S = Shield • P = Pause • M = Mute</li>
+	        </ul>
+	        <div class="row">
+	          <label>Control Mode:</label>
+	          <label><input type="radio" name="startCtrlMode" value="mouse" checked> Mouse</label>
+	          <label><input type="radio" name="startCtrlMode" value="buttons"> On-screen buttons</label>
+	        </div>
+	      </div>
+	    </div>
+	    <div class="cta">
+	      <button id="startBtnMain" class="btn-ui primary">Start Flight</button>
+	      <button id="muteBtnMain" class="btn-ui">Mute</button>
+	    </div>
+	    <p class="note">Audio starts after your first click. For best performance, run via a local HTTP server.</p>
+	  </div>
+	</div>
+
+	<script>
+	(function(){
+	  function onReady(){
+	    var menu = document.getElementById('startMenu');
+	    var startBtn = document.getElementById('startBtnMain');
+	    var muteBtn = document.getElementById('muteBtnMain');
+	    var radios = document.querySelectorAll('input[name="startCtrlMode"]');
+	    try { window.paused = true; } catch(e){}
+	    if (window.updateControlOverlayVisibility) window.updateControlOverlayVisibility();
+	    startBtn.addEventListener('click', function(){
+	      var sel = document.querySelector('input[name="startCtrlMode"]:checked');
+	      if (sel && typeof window.setControlMode === 'function') window.setControlMode(sel.value);
+	      if (typeof window.ensureAudio === 'function') window.ensureAudio();
+	      try{ window.paused = false; }catch(e){}
+	      menu.classList.remove('show');
+	      var ov = document.getElementById('pauseOverlayEnhanced'); if (ov) ov.classList.remove('show');
+	    });
+	    muteBtn.addEventListener('click', function(){
+	      try {
+	        window.muted = !window.muted;
+	        if (window.audioEngine && typeof window.audioEngine.setMuted === 'function') window.audioEngine.setMuted(window.muted);
+	        this.textContent = window.muted ? 'Unmute' : 'Mute';
+	      } catch(e){}
+	    });
+	    radios.forEach(function(r){ r.addEventListener('change', function(){ if (typeof window.setControlMode === 'function') window.setControlMode(this.value); }); });
+	  }
+	  if (document.readyState !== 'loading') onReady();
+	  else document.addEventListener('DOMContentLoaded', onReady);
+	})();
+	</script>
+	</body>
+</html>
